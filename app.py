@@ -11,7 +11,6 @@ load_dotenv()
 
 # Access the variables using os.getenv()
 api_key = os.getenv("UP_API_KEY")
-database_url = os.getenv("DATABASE_URL")
 
 
 @app.route("/")
