@@ -22,7 +22,7 @@ def get_api(): #def = defines function + instead of {} we use indentation and co
         headers = {
             "Authorization": f"Bearer {api_key}" # f = string literal 
         }
-        res = requests.get('https://api.up.com.au/api/v1/accounts', headers=headers)
+        res = requests.get('https://api.up.com.au/api/v1/accounts/92102abc-5f5f-430c-803f-285eb2e4f281', headers=headers)
         response = res.json()
         # display_name = response['data'][2]['attributes']['displayName'] #retrieving specific data from response 
         print (json.dumps(response, indent=2))
@@ -65,13 +65,21 @@ def handle_webhook():
             }
             response = requests.get(f'https://api.up.com.au/api/v1/transactions/{transaction_id}', headers=headers)
             transaction_data = response.json()
-            print(json.dumps(transaction_data['data']['attributes']['amount']['valueInBaseUnits'], indent=2))
             
             # 4. filter out account that is losing money (when valueInBaseUnits > 0) 
             valueInBaseUnits = transaction_data['data']['attributes']['amount']['valueInBaseUnits']
             if valueInBaseUnits > 0:
+                
                 # 5. if valueInBaseUnits > 0: extract the data - value, description and created at
-                print(json.dumps(transaction_data, indent=2))
+                    #5.1 Fetch account id and retrieve account details for displayName
+                account_id = transaction_data['data']['relationships']['account']['data']['id']
+                res = requests.get(f'https://api.up.com.au/api/v1/accounts/{account_id}', headers=headers)
+                fetchAccount = res.json()
+                displayName = fetchAccount['data']['attributes']['displayName']
+                description = transaction_data['data']['attributes']['description']
+                value = transaction_data['data']['attributes']['amount']['value']
+                created_at = transaction_data['data']['attributes']['createdAt']
+                print(f'Details needed: {description}, {value}, {created_at}, {displayName}!')
                 
                 # 6. use library to send an email with this data **CURRENT 
             else:
