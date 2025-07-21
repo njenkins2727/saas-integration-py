@@ -30,8 +30,61 @@ def get_api(): #def = defines function + instead of {} we use indentation and co
     except:
         print('Error: failed to get display name')
 
+# PING WEBHOOK BY ID 
+@app.route("/latestTransaction", methods=['POST'])
+def latest_transaction():
+    try:
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+        }
+        res = requests.post('https://api.up.com.au/api/v1/webhooks/c479169f-6ac5-4ecd-9443-58b7670d273c/', headers=headers)
+        response = res.json()
+        print(f'Transaction sent! {response}')
+        return '<h1> Transaction sent! </h1>'
+    except Exception as e:
+        print("ERROR: status 500 || Failed to POST webhook")
 
-## POST A WEBHOOK
+@app.route("/webhookAction", methods=['GET', 'POST'])
+def handle_webhook():
+    try:
+        data = request.get_json()
+
+        # 1. Check if the event type is TRANSACTION_CREATED
+        if data['data']['attributes']['eventType'] == 'TRANSACTION_CREATED':
+            print('New Transaction Created Webhook Received!')
+
+            # 2. Extract the transaction ID
+            transaction_id = data['data']['relationships']['transaction']['data']['id']
+            print(f'Transaction ID: {transaction_id}')
+
+            # 3. Make a GET request to retrieve full transaction details
+            headers = {
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            }
+            response = requests.get(f'https://api.up.com.au/api/v1/transactions/{transaction_id}', headers=headers)
+            transaction_data = response.json()
+            print(json.dumps(transaction_data['data']['attributes']['amount']['valueInBaseUnits'], indent=2))
+            
+            # 4. filter out account that is losing money (when valueInBaseUnits > 0) 
+            valueInBaseUnits = transaction_data['data']['attributes']['amount']['valueInBaseUnits']
+            if valueInBaseUnits > 0:
+                # 5. if valueInBaseUnits > 0: extract the data - value, description and created at
+                print(json.dumps(transaction_data, indent=2))
+                
+                # 6. use library to send an email with this data **CURRENT 
+            else:
+                return ''
+        else:
+            print(f'Failed to fetch transaction details. Status code: {response.status_code}')
+            print(response.text)
+
+        return '', 200
+    except:
+        return 'Error handle webhook'
+
+## POST A WEBHOOK 
 # @app.route("/webhookAction", methods=['GET', 'POST']) #Flask runs get requests only by default so need to specify **BOTH** GET and POST
 # def POST_webhook(): #def = defines function + instead of {} we use indentation and colons:
 #     try: # try and expect NOT try catch 
@@ -83,30 +136,6 @@ def get_api(): #def = defines function + instead of {} we use indentation and co
 #         return f'SUCCESS: status 200 || This is the created webhooks: {response}'
 #     except Exception as e:
 #         print("ERROR: status 500 || Failed to GET webhook")
-
-# # PING WEBHOOK BY ID 
-# @app.route("/ping", methods=['GET', 'POST'])
-# def ping_webhook():
-#         try:
-#             headers = {
-#                 'Authorization': f'Bearer {api_key}',
-#                 'Content-Type': 'application/json',
-#             }
-#             res = requests.post('https://api.up.com.au/api/v1/webhooks/c479169f-6ac5-4ecd-9443-58b7670d273c/ping', headers=headers)
-#             response = res.json()
-#             print(f'Ping sent! {response}')
-#             return '<h1> Ping sent! </h1>'
-#         except Exception as e:
-#             print("ERROR: status 500 || Failed to GET webhook")
-
-# @app.route("/webhookAction", methods=['POST'])
-# def handle_webhook():
-#     try:
-#         data = request.get_json()
-#         print(f'Webhook received! {json.dumps(data, indent=2)}')
-#         return ''
-#     except:
-#         return 'Error handle webhook'
 
 # #  DELETE WEBHOOK
 # @app.route("/deleteWebhook", methods=["GET", "DELETE"])
