@@ -1,7 +1,13 @@
-from flask import Flask, request
 import os
 import requests
 import json
+import smtplib
+import datetime
+from flask import Flask, request
+from datetime import datetime
+from email.message import EmailMessage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
@@ -19,31 +25,10 @@ api_key = os.getenv("UP_API_KEY")
 @app.route("/")
 def get_api(): #def = defines function + instead of {} we use indentation and colons:
     try: # try and expect NOT try catch 
-        headers = {
-            "Authorization": f"Bearer {api_key}" # f = string literal 
-        }
-        res = requests.get('https://api.up.com.au/api/v1/accounts/92102abc-5f5f-430c-803f-285eb2e4f281', headers=headers)
-        response = res.json()
-        # display_name = response['data'][2]['attributes']['displayName'] #retrieving specific data from response 
-        print (json.dumps(response, indent=2))
-        return f"<h1>success</h1>"
+        print ('Python Running!')
+        return f"<h1>Python script running int he background!</h1>"
     except:
         print('Error: failed to get display name')
-
-# PING WEBHOOK BY ID 
-@app.route("/latestTransaction", methods=['POST'])
-def latest_transaction():
-    try:
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json',
-        }
-        res = requests.post('https://api.up.com.au/api/v1/webhooks/c479169f-6ac5-4ecd-9443-58b7670d273c/', headers=headers)
-        response = res.json()
-        print(f'Transaction sent! {response}')
-        return '<h1> Transaction sent! </h1>'
-    except Exception as e:
-        print("ERROR: status 500 || Failed to POST webhook")
 
 @app.route("/webhookAction", methods=['GET', 'POST'])
 def handle_webhook():
@@ -56,7 +41,6 @@ def handle_webhook():
 
             # 2. Extract the transaction ID
             transaction_id = data['data']['relationships']['transaction']['data']['id']
-            print(f'Transaction ID: {transaction_id}')
 
             # 3. Make a GET request to retrieve full transaction details
             headers = {
@@ -69,19 +53,49 @@ def handle_webhook():
             # 4. filter out account that is losing money (when valueInBaseUnits > 0) 
             valueInBaseUnits = transaction_data['data']['attributes']['amount']['valueInBaseUnits']
             if valueInBaseUnits > 0:
-                
-                # 5. if valueInBaseUnits > 0: extract the data - value, description and created at
-                    #5.1 Fetch account id and retrieve account details for displayName
-                account_id = transaction_data['data']['relationships']['account']['data']['id']
-                res = requests.get(f'https://api.up.com.au/api/v1/accounts/{account_id}', headers=headers)
-                fetchAccount = res.json()
-                displayName = fetchAccount['data']['attributes']['displayName']
-                description = transaction_data['data']['attributes']['description']
-                value = transaction_data['data']['attributes']['amount']['value']
-                created_at = transaction_data['data']['attributes']['createdAt']
-                print(f'Details needed: {description}, {value}, {created_at}, {displayName}!')
-                
-                # 6. use library to send an email with this data **CURRENT 
+                try:
+                    # 5. if valueInBaseUnits > 0: extract the data - value, description and created at
+                        #5.1 Fetch account id and retrieve account details for displayName
+                    account_id = transaction_data['data']['relationships']['account']['data']['id']
+                    res = requests.get(f'https://api.up.com.au/api/v1/accounts/{account_id}', headers=headers)
+                    fetchAccount = res.json()
+                    displayName = fetchAccount['data']['attributes']['displayName']
+                    description = transaction_data['data']['attributes']['description']
+                    value = transaction_data['data']['attributes']['amount']['value']
+                    created_at = transaction_data['data']['attributes']['createdAt']
+                        #5.2 Format timestamp for readability 
+                    dt = datetime.fromisoformat(created_at)
+                    formatted_timestamp = dt.strftime(f"%d %b %Y, %H:%M:%S")
+                    print(f'Details needed: {description}, {value}, {formatted_timestamp}, {displayName}!')
+                    
+                    # 6. Send an email with this data
+                    sender_email = 'nathistheone@gmail.com'
+                    receiver_email = 'njenkins2727@gmail.com'
+
+                    subject = 'Test Email'
+                    body = f"""
+                    Yo Nathan,
+
+                    ${value} Landed into "{displayName}" account @ {formatted_timestamp}! This was a {description}.
+
+                    Best regards,
+                    Nathan :3
+                    """
+
+                    message = MIMEMultipart()
+                    message["From"] = sender_email
+                    message["To"] = receiver_email
+                    message["Subject"] = subject
+
+                    message.attach(MIMEText(body, "plain"))
+
+                    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                        server.starttls()
+                        server.login(sender_email, 'vkuyvmypkxbdwdeh')
+                        server.send_message(message)
+                        print('Email sent successfully: Check inbox!')
+                except:
+                    print('Error sending email to account that recieved money')
             else:
                 return ''
         else:
