@@ -106,7 +106,7 @@ def handle_webhook():
     except:
         return 'Error handle webhook'
 
-## POST A WEBHOOK 
+# POST A WEBHOOK 
 # @app.route("/webhookAction", methods=['GET', 'POST']) #Flask runs get requests only by default so need to specify **BOTH** GET and POST
 # def POST_webhook(): #def = defines function + instead of {} we use indentation and colons:
 #     try: # try and expect NOT try catch 
@@ -117,26 +117,25 @@ def handle_webhook():
 #         json_data = {
 #             'data': {
 #                 'attributes': {
-#                     'url': 'https://dd5f5e371a54.ngrok-free.app/webhookAction',
-#                     'description': 'Test Webhook 2',
+#                     'url': 'https://upemailscript.onrender.com',
+#                     'description': 'Webhook for Up automated email script',
 #                 },
 #             },
 #         }
 #         res = requests.post('https://api.up.com.au/api/v1/webhooks', headers=headers, json=json_data)
 #         response = res.json()
-#         print (f'Webhook created - 201: {json.dump(response, indent=2)}')
-#         return f"<h1>Webhook created - 201: {response}</h1>"
+#         print (f'Webhook created - 201: {json.dumps(response, indent=2)}')
+#         return f"<h1>Webhook created - 201: {json.dumps(response, indent=2)}</h1>"
 #     except:
 #         print(f'Error: failed to create Webhook - 500: {response}')
 
-## GET ALL WEBHOOKS
-# @app.route("/webhookAction") 
+# GET ALL WEBHOOKS
+# @app.route("/") 
 # def GET_webhook():
 #     try:
 #         headers = {
 #             'Authorization': f'Bearer {api_key}',
 #         }
-
 #         res = requests.get('https://api.up.com.au/api/v1/webhooks?page[size]=10', headers=headers)
 #         response = res.json()
 #         print(f'SUCCESS: status 200 || These are created webhooks: {json.dumps(response, indent=2)}')
