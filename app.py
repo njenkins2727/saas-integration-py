@@ -12,7 +12,7 @@ from email.mime.text import MIMEText
 app = Flask(__name__)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
 
 from dotenv import load_dotenv
 
